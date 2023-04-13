@@ -1,0 +1,38 @@
+#!/bin/bash
+# Define the search URL and search keyword
+url="https://www.energylivenews.com/latest-news/"
+keyword="hydrogen"
+# Define the Telegram bot API key and chat ID
+bot_api_key="your_telegram_bot_api_key"
+chat_id="your_telegram_chat_id"
+# Define the previous search results file
+previous_search_results_file="previous_search_results.txt"
+# Define the temporary search results file
+temp_search_results_file="temp_search_results.txt"
+# Define a function to send a message to Telegram
+function telegram_send_message() {
+    curl -s -X POST "https://api.telegram.org/bot${bot_api_key}/sendMessage" \
+        -d chat_id="${chat_id}" \
+        -d text="$1" > /dev/null
+}
+# Check if the previous search results file exists
+if [ -f "$previous_search_results_file" ]
+then
+    # If the previous search results file exists, use it to exclude previous search results
+    curl -s "$url" | grep "$keyword" | grep -v -F -f "$previous_search_results_file" > "$temp_search_results_file"
+else
+    # If the previous search results file does not exist, skip excluding previous search results
+    curl -s "$url" | grep "$keyword" > "$temp_search_results_file"
+fi
+# Check if there are any new search results
+if [ -s "$temp_search_results_file" ]
+then
+    # If there are new search results, send them to Telegram and update the previous search results file
+    while read -r line
+    do
+        telegram_send_message "$line"
+    done < "$temp_search_results_file"
+    cat "$temp_search_results_file" >> "$previous_search_results_file"
+fi
+# Cleanup
+rm -f "$temp_search_results_file"
