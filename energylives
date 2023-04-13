@@ -1,14 +1,12 @@
-
-
 #!/bin/bash
 
 # Define the search URL and search keyword
 url="https://www.energylivenews.com/latest-news/"
-keyword="hydrogen"
+keyword="hydrogen\|wind\|h2\|UK\|cell"
 
 # Define the Telegram bot API key and chat ID
-bot_api_key="123456789"
-chat_id="-"
+bot_api_key=""
+chat_id=""
 
 # Define the previous search results file
 previous_search_results_file="previous_search_results.txt"
