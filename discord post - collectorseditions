@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Define constants
+FEED_URL="https://collectorseditions.co.uk/category/gaming/feed/"
+DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/testwebhook"
+TMP_FILE="links.tmp"
+LINKS_FILE="links.txt"
+SEEN_FILE="seen.txt"
+
+# Function to post message to Discord
+post_to_discord () {
+    local message=$1
+    curl -X POST "$DISCORD_WEBHOOK_URL" -d "content=$message"
+}
+
+# Function to check for new links and post them to Discord
+check_new_links () {
+    # Fetch feed and extract links
+    wget "$FEED_URL" -O - | grep '<link>' | sed -n 's/.*<link>\([^<]*\).*/\1/p' | sort -u > "$TMP_FILE"
+
+    # Read in list of seen links
+    local seen_links=()
+    if [ -f "$SEEN_FILE" ]; then
+        readarray -t seen_links < "$SEEN_FILE"
+    fi
+
+    # Check for new links
+    while read -r link; do
+        if ! grep -q "$link" "$LINKS_FILE" && ! printf '%s\n' "${seen_links[@]}" | grep -q "$link"; then
+            # Post new link to Discord
+            post_to_discord "$link"
+            # Append new link to links file
+            echo "$link" >> "$LINKS_FILE"
+        fi
+    done < "$TMP_FILE"
+
+    # Update seen file
+    cat "$TMP_FILE" >> "$SEEN_FILE"
+}
+
+# Create files if they don't exist
+touch "$LINKS_FILE"
+touch "$SEEN_FILE"
+
+# Check for new links
+check_new_links
